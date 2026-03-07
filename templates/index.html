@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Interior Design MVP</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: background 0.5s ease;
+            min-width: 320px; /* чтобы на узких экранах был скролл, но вёрстка не ломалась */
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+            max-width: 900px;
+            width: 100%;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        h1 {
+            text-align: center;
+            color: #1a1a1a;
+            margin-bottom: 10px;
+            font-size: 2.2em;
+            font-weight: 600;
+            text-shadow: 0 2px 5px rgba(255,255,255,0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-style: italic;
+            font-size: 1.1em;
+            text-shadow: 0 1px 3px rgba(255,255,255,0.3);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            resize: vertical;
+            min-height: 80px;      /* минимальная высота – примерно 4 строки */
+            max-height: 300px;     /* максимальная высота – чтобы не уезжало за пределы экрана */
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+            transition: all 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2), 0 0 0 2px rgba(255, 255, 255, 0.8) inset;
+        }
+
+        /* Общий стиль для всех кнопок */
+        button, .download-btn {
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        /* Кнопка генерации (зеленая) */
+        .generate-btn {
+            padding: 15px 30px;
+            background: rgba(76, 175, 80, 0.75);
+            border-radius: 40px;
+            font-size: 18px;
+            align-self: flex-start;
+        }
+
+        .generate-btn:hover {
+            background: rgba(76, 175, 80, 0.9);
+            transform: scale(1.02);
+            box-shadow: 0 12px 28px rgba(76, 175, 80, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+        }
+
+        /* Индикатор загрузки */
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            color: #1a1a1a;
+            font-size: 18px;
+            font-weight: 500;
+            text-shadow: 0 1px 3px rgba(255,255,255,0.3);
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #333;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .result-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Блок промпта (стеклянный) */
+        .prompt-container {
+            border-radius: 25px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .prompt-header {
+            background: rgba(255, 255, 255, 0.4);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.3s;
+        }
+
+        .prompt-header:hover {
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .prompt-header h3 {
+            margin: 0;
+            color: #1a1a1a;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .toggle-icon {
+            font-size: 20px;
+            color: #1a1a1a;
+            transition: transform 0.3s;
+        }
+
+        .prompt-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: rgba(255, 255, 255, 0.3);
+            padding: 0 20px;
+        }
+
+        .prompt-content.show {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .prompt-text {
+            color: #222;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-size: 15px;
+        }
+
+        /* Контейнер изображения */
+        .image-container {
+            border-radius: 25px;
+            padding: 20px;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .image-wrapper {
+            text-align: center;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .image-wrapper img {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            transition: opacity 0.3s;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .placeholder {
+            color: #444;
+            font-size: 18px;
+            padding: 40px;
+            text-shadow: 0 1px 3px rgba(255,255,255,0.3);
+        }
+
+        /* Кнопка скачивания (серая, но заметная) */
+        .download-btn {
+            display: none; /* скрыта до появления картинки */
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 30px;
+            background: rgba(120, 120, 120, 0.9); /* насыщенный серый */
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            z-index: 10;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+        }
+
+        .download-btn:hover {
+            background: rgba(140, 140, 140, 1);
+            transform: translateX(-50%) scale(1.05);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.8) inset;
+        }
+
+        /* Модальное окно для увеличения картинки */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        .close {
+            position: absolute;
+            top: 25px;
+            right: 35px;
+            color: white;
+            font-size: 50px;
+            font-weight: 300;
+            cursor: pointer;
+            transition: 0.3s;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .close:hover {
+            color: #ff9f40;
+            transform: scale(1.1);
+        }
+
+        .error {
+            color: #d32f2f;
+            background: rgba(255, 235, 238, 0.7);
+            backdrop-filter: blur(5px);
+            padding: 15px;
+            border-radius: 25px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 AI Interior Design</h1>
+        <div class="subtitle">Сгенерируйте интерьер по текстовому описанию</div>
+
+        <div class="input-group">
+            <textarea id="prompt" rows="4" placeholder="Например: Спальня в скандинавском стиле с панорамным окном и живыми растениями">Спальня в скандинавском стиле с панорамным окном и живыми растениями</textarea>
+            <button class="generate-btn" onclick="generate()">Сгенерировать</button>
+        </div>
+
+        <!-- Индикатор загрузки со спиннером -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <span>Генерация... (это может занять 20-30 секунд)</span>
+        </div>
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div class="result-area">
+            <!-- Блок с промптом, скрытый по умолчанию -->
+            <div class="prompt-container">
+                <div class="prompt-header" onclick="togglePrompt()">
+                    <h3>✨ Улучшенный промпт</h3>
+                    <span class="toggle-icon" id="toggleIcon">▶</span>
+                </div>
+                <div class="prompt-content" id="promptContent">
+                    <div class="prompt-text" id="enhancedPrompt"></div>
+                </div>
+            </div>
+
+            <!-- Блок с изображением и кнопкой скачивания -->
+            <div class="image-container">
+                <div class="image-wrapper">
+                    <img id="result" src="" alt="Сгенерированное изображение" onclick="openModal()" style="display: none;">
+                    <button class="download-btn" id="downloadBtn" onclick="downloadImage(event)">Скачать</button>
+                    <div class="placeholder" id="placeholder">Здесь появится ваше изображение</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для увеличенного изображения -->
+    <div id="modal" class="modal" onclick="closeModal(event)">
+        <span class="close" onclick="closeModal(event)">&times;</span>
+        <img class="modal-content" id="modalImage">
+    </div>
+
+    <script>
+        // Устанавливаем случайный градиент при загрузке страницы
+        function setRandomGradient() {
+            const hue1 = Math.floor(Math.random() * 360);
+            const hue2 = (hue1 + Math.floor(Math.random() * 60 + 150)) % 360;
+            const sat = 30 + Math.floor(Math.random() * 20); // 30-50%
+            const light = 75 + Math.floor(Math.random() * 15); // 75-90%
+            const color1 = `hsl(${hue1}, ${sat}%, ${light}%)`;
+            const color2 = `hsl(${hue2}, ${sat}%, ${light-5}%)`;
+            document.body.style.background = `linear-gradient(135deg, ${color1} 0%, ${color2} 100%)`;
+        }
+        setRandomGradient();
+
+        // Переменные для хранения последней генерации
+        let lastImageBase64 = '';
+        let lastPrompt = '';
+
+        function togglePrompt() {
+            const content = document.getElementById('promptContent');
+            const icon = document.getElementById('toggleIcon');
+            content.classList.toggle('show');
+            icon.textContent = content.classList.contains('show') ? '▼' : '▶';
+        }
+
+        async function generate() {
+            const text = document.getElementById('prompt').value;
+            const loading = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const img = document.getElementById('result');
+            const placeholder = document.getElementById('placeholder');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const enhancedSpan = document.getElementById('enhancedPrompt');
+
+            // Сброс
+            errorDiv.style.display = 'none';
+            img.style.display = 'none';
+            placeholder.style.display = 'block';
+            downloadBtn.style.display = 'none';
+            enhancedSpan.innerText = '';
+            loading.style.display = 'flex';  // показываем спиннер и текст
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({text: text})
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Ошибка сервера');
+                }
+
+                const data = await response.json();
+
+                lastImageBase64 = data.image_base64;
+                lastPrompt = data.enhanced_prompt;
+
+                enhancedSpan.innerText = data.enhanced_prompt;
+                img.src = 'data:image/jpeg;base64,' + data.image_base64;
+                img.style.display = 'block';
+                placeholder.style.display = 'none';
+                downloadBtn.style.display = 'block';
+
+            } catch (error) {
+                errorDiv.textContent = 'Ошибка: ' + error.message;
+                errorDiv.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';  // скрываем спиннер
+            }
+        }
+
+        function downloadImage(event) {
+            event.stopPropagation();
+            if (!lastImageBase64) return;
+
+            let filename = 'interior.jpg';
+            if (lastPrompt) {
+                const words = lastPrompt.split(' ').slice(0, 4).join('_').replace(/[^a-zA-Z0-9_]/g, '');
+                if (words) {
+                    filename = `${words}.jpg`;
+                } else {
+                    filename = `interior_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.jpg`;
+                }
+            } else {
+                filename = `interior_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.jpg`;
+            }
+
+            const byteCharacters = atob(lastImageBase64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], {type: 'image/jpeg'});
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function openModal() {
+            const img = document.getElementById('result');
+            if (img.src && img.src !== '') {
+                document.getElementById('modalImage').src = img.src;
+                document.getElementById('modal').style.display = 'flex';
+            }
+        }
+
+        function closeModal(event) {
+            const modal = document.getElementById('modal');
+            if (event.target === modal || event.target.classList.contains('close')) {
+                modal.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.getElementById('modal').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
